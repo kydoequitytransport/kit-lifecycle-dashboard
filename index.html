@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f6fa" />
+    <title>Kit Lifecycle · Nebula Ops</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js?v=3" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Nebula Ops home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span><strong>nebula</strong><small>GENOMICS · OPS</small></span>
+        </a>
+        <div class="side-label">WORKSPACE</div>
+        <a class="nav-link active" href="#overview"><span class="nav-icon">◫</span> Lifecycle overview</a>
+        <a class="nav-link" href="#attention"><span class="nav-icon">◷</span> Needs attention <span class="nav-count" id="nav-attention-count">0</span></a>
+        <div class="sidebar-bottom">
+          <div class="sidebar-note">
+            <span class="live-dot"></span>
+            <div><strong>Pipeline monitor</strong><small>Snapshot <span id="sidebar-as-of">—</span></small></div>
+          </div>
+          <div class="profile">
+            <div class="avatar">NO</div>
+            <div><strong>Nebula Ops</strong><small>Operations team</small></div>
+            <span class="profile-dots">···</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content" id="overview">
+        <header class="topbar">
+          <div class="breadcrumb">Operations <span>/</span> Kit lifecycle</div>
+          <div class="top-actions">
+            <span class="snapshot-label"><span class="live-dot"></span> DATA SNAPSHOT <b id="snapshot-date-label">—</b></span>
+            <button class="icon-button" id="help-button" aria-label="Show data notes" title="Data notes">?</button>
+          </div>
+        </header>
+
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">FULFILLMENT · LIVE VIEW</p>
+            <h1>Kit lifecycle</h1>
+            <p class="subtitle">Track every kit from shipment to report, and spot the ones that need a nudge.</p>
+          </div>
+          <button class="button button-secondary" id="upload-toggle"><span class="upload-icon">↑</span> Import CSVs</button>
+        </section>
+
+        <section class="upload-panel hidden" id="upload-panel" aria-label="Import CSV files">
+          <div class="upload-copy">
+            <span class="upload-badge">CSV</span>
+            <div><strong>Use a different dataset</strong><p>Choose both files with the same columns as the sample exports.</p></div>
+          </div>
+          <label class="file-picker">Orders CSV<input type="file" id="orders-file" accept=".csv,text/csv" /></label>
+          <label class="file-picker">Kit events CSV<input type="file" id="events-file" accept=".csv,text/csv" /></label>
+          <button class="button button-primary" id="load-csv-button" disabled>Load data</button>
+          <button class="text-button" id="cancel-upload">Cancel</button>
+          <p class="upload-error hidden" id="upload-error" role="alert"></p>
+        </section>
+
+        <section class="filters-card" aria-label="Dashboard filters">
+          <div class="filter-heading"><span class="filter-symbol">☷</span><strong>Filters</strong><span class="filter-separator"></span><span id="filter-summary">All eligible orders</span></div>
+          <div class="filter-controls">
+            <label class="filter-field"><span>ORDER DATE FROM</span><input id="date-from" type="date" /></label>
+            <label class="filter-field"><span>TO</span><input id="date-to" type="date" /></label>
+            <label class="filter-field"><span>PRODUCT</span><select id="product-filter"><option value="">All products</option></select></label>
+            <label class="filter-field"><span>COUNTRY</span><select id="country-filter"><option value="">All countries</option></select></label>
+            <label class="filter-field snapshot-field"><span>AS OF</span><input id="as-of-date" type="date" /></label>
+            <button class="button button-primary apply-button" id="apply-filters">Apply filters <span>→</span></button>
+            <button class="reset-button" id="reset-filters">Reset</button>
+          </div>
+        </section>
+
+        <section class="metrics-grid" aria-label="Pipeline summary">
+          <article class="metric-card">
+            <div class="metric-top"><span>ELIGIBLE ORDERS</span><span class="metric-icon indigo">↗</span></div>
+            <div class="metric-value" id="metric-orders">—</div>
+            <div class="metric-foot"><span class="metric-dot indigo-dot"></span>Paid physical-kit orders</div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-top"><span>KITS IN PIPELINE</span><span class="metric-icon blue">◉</span></div>
+            <div class="metric-value" id="metric-active">—</div>
+            <div class="metric-foot"><span class="metric-dot blue-dot"></span>Current, non-replaced kits</div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-top"><span>REPORTS READY</span><span class="metric-icon green">✓</span></div>
+            <div class="metric-value" id="metric-completed">—</div>
+            <div class="metric-foot"><span class="metric-dot green-dot"></span><span id="completion-rate">—</span> of current kits</div>
+          </article>
+          <article class="metric-card attention-metric">
+            <div class="metric-top"><span>NEEDS FOLLOW-UP</span><span class="metric-icon amber">!</span></div>
+            <div class="metric-value" id="metric-stuck">—</div>
+            <div class="metric-foot"><span class="metric-dot amber-dot"></span><span id="overdue-caption">Beyond stage target</span></div>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel pipeline-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">WHERE ARE THEY?</p><h2>Current pipeline</h2></div>
+              <span class="panel-meta" id="pipeline-total">— kits</span>
+            </div>
+            <div class="pipeline-chart" id="pipeline-chart"></div>
+            <div class="pipeline-legend" id="pipeline-legend"></div>
+          </article>
+          <article class="panel turnaround-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">CALENDAR DAYS · MEDIAN</p><h2>Stage turnaround</h2></div>
+              <span class="panel-meta">Target vs. actual</span>
+            </div>
+            <div class="stage-chart" id="stage-chart"></div>
+            <div class="chart-footnote"><span class="legend-swatch actual-swatch"></span> Actual <span class="legend-swatch target-swatch"></span> Target <span class="chart-hint">Grouped by product below</span></div>
+          </article>
+        </section>
+
+        <section class="panel product-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">PRODUCT COMPARISON</p><h2>Turnaround by product</h2></div>
+            <span class="panel-meta">Median days · completed stages</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table comparison-table">
+              <thead><tr id="product-table-head"><th>STAGE</th></tr></thead>
+              <tbody id="product-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel attention-panel" id="attention">
+          <div class="panel-heading attention-heading">
+            <div><p class="eyebrow">ACTION QUEUE</p><h2>Kits needing follow-up <span class="heading-count" id="attention-count">0</span></h2><p class="panel-description">Open kits that have passed their target turnaround.</p></div>
+            <div class="search-wrap"><span>⌕</span><input id="order-search" type="search" placeholder="Search order or kit ID" aria-label="Search order or kit ID" /></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table attention-table">
+              <thead><tr><th>ORDER / KIT</th><th>PRODUCT</th><th>COUNTRY</th><th>CURRENT STAGE</th><th>WAITING</th><th>OVER TARGET</th><th></th></tr></thead>
+              <tbody id="attention-table-body"></tbody>
+            </table>
+          </div>
+          <div class="table-empty hidden" id="attention-empty"></div>
+          <div class="panel-footer"><span id="attention-table-caption">—</span><button class="text-button" id="show-all-stuck">Show all <span>→</span></button></div>
+        </section>
+
+        <section class="panel orders-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">ORDER LOOKUP</p><h2>Recent orders</h2><p class="panel-description">Select an order to see its complete kit history.</p></div>
+            <div class="search-wrap"><span>⌕</span><input id="recent-search" type="search" placeholder="Search order ID" aria-label="Search order ID" /></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>ORDER</th><th>PLACED</th><th>PRODUCT</th><th>COUNTRY</th><th>KITS</th><th>STATUS</th><th></th></tr></thead>
+              <tbody id="orders-table-body"></tbody>
+            </table>
+          </div>
+          <div class="table-empty hidden" id="orders-empty">No orders match your filters.</div>
+          <div class="panel-footer"><span id="orders-table-caption">—</span><div class="pagination"><button id="previous-page" aria-label="Previous page">‹</button><span id="page-indicator">1 / 1</span><button id="next-page" aria-label="Next page">›</button></div></div>
+        </section>
+
+        <footer class="page-footer">
+          <span><span class="footer-mark">✳</span> NEBULA GENOMICS · INTERNAL OPERATIONS</span>
+          <span id="data-quality-summary">Data checks: —</span>
+        </footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="order-modal" role="presentation">
+      <section class="order-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+        <button class="drawer-close" id="close-drawer" aria-label="Close order details">×</button>
+        <div class="drawer-header"><p class="eyebrow">ORDER DETAIL</p><h2 id="drawer-title">—</h2><p id="drawer-subtitle">—</p></div>
+        <div class="drawer-summary" id="drawer-summary"></div>
+        <div class="drawer-section-title"><h3>Kit activity</h3><span id="drawer-event-count">—</span></div>
+        <div id="drawer-timeline" class="timeline"></div>
+      </section>
+    </div>
+
+    <div class="toast hidden" id="toast" role="status"></div>
+  </body>
+</html>
